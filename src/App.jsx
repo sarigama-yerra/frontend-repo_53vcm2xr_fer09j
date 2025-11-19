@@ -7,6 +7,7 @@ function App() {
   const [clips, setClips] = useState([])
   const [composerOpen, setComposerOpen] = useState(false)
   const [coords, setCoords] = useState({ lat: null, lng: null })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if ('geolocation' in navigator) {
@@ -24,16 +25,32 @@ function App() {
   }, [])
 
   const fetchClips = async (lat, lng) => {
-    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-    const params = new URLSearchParams()
-    if (lat && lng) {
-      params.set('lat', lat)
-      params.set('lng', lng)
-      params.set('radiusKm', '25')
+    try {
+      setLoading(true)
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+      const params = new URLSearchParams()
+      if (lat && lng) {
+        params.set('lat', lat)
+        params.set('lng', lng)
+        params.set('radiusKm', '25')
+      }
+      const res = await fetch(`${baseUrl}/api/clips?${params.toString()}`)
+      const data = await res.json()
+
+      // If location-filtered query returned nothing, fall back to global recent clips
+      if (Array.isArray(data) && data.length === 0 && lat && lng) {
+        const res2 = await fetch(`${baseUrl}/api/clips?limit=50`)
+        const data2 = await res2.json()
+        setClips(data2)
+      } else {
+        setClips(data)
+      }
+    } catch (e) {
+      // simple noop; could add toast
+      setClips([])
+    } finally {
+      setLoading(false)
     }
-    const res = await fetch(`${baseUrl}/api/clips?${params.toString()}`)
-    const data = await res.json()
-    setClips(data)
   }
 
   const handleCreated = (clip) => {
@@ -55,9 +72,19 @@ function App() {
       <Header onOpenComposer={() => setComposerOpen(true)} />
 
       <main className="max-w-5xl mx-auto px-4 py-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {clips.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full text-center text-white/70 py-20">Loading clips…</div>
+        ) : clips.length === 0 ? (
           <div className="col-span-full text-center text-white/70 py-20">
-            No clips yet. Be the first to share something around you!
+            No clips yet nearby. Be the first to share something around you!
+            <div className="mt-4">
+              <button
+                onClick={() => fetchClips()}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10"
+              >
+                Explore everyone’s clips
+              </button>
+            </div>
           </div>
         ) : (
           clips.map((clip) => (

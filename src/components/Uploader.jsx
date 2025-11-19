@@ -14,7 +14,9 @@ export default function Uploader({ onUploaded }) {
       const res = await fetch(`${baseUrl}/api/upload`, { method: 'POST', body: form })
       if (!res.ok) throw new Error('Upload failed')
       const data = await res.json()
-      onUploaded(data.url)
+      // Ensure absolute URL so the video plays from the backend host
+      const absoluteUrl = data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`
+      onUploaded(absoluteUrl)
     } catch (e) {
       alert(e.message)
     } finally {
