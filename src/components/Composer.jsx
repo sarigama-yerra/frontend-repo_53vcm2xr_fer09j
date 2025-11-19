@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Uploader from './Uploader'
 
 export default function Composer({ open, onClose, onCreated }) {
   const [caption, setCaption] = useState('')
@@ -61,10 +62,14 @@ export default function Composer({ open, onClose, onCreated }) {
             <input
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://...mp4"
+              placeholder="https://...mp4 or use uploader below"
               required
               className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
             />
+            <div className="mt-2">
+              <Uploader onUploaded={(url) => setVideoUrl(url)} />
+              <p className="text-[11px] text-white/50 mt-1">Uploads are served from the backend under /uploads. Large files may take time.</p>
+            </div>
           </div>
           <div>
             <label className="text-sm text-white/70">Caption</label>
