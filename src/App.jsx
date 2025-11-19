@@ -8,7 +8,7 @@ function App() {
   const [composerOpen, setComposerOpen] = useState(false)
   const [coords, setCoords] = useState({ lat: null, lng: null })
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState('worldwide') // 'nearby' | 'worldwide'
+  const [mode, setMode] = useState('nearby') // 'nearby' | 'worldwide'
 
   const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
