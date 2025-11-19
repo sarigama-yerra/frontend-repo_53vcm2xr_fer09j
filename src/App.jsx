@@ -2,22 +2,35 @@ import { useEffect, useState, useCallback } from 'react'
 import Header from './components/Header'
 import ClipCard from './components/ClipCard'
 import Composer from './components/Composer'
+import MapView from './components/MapView'
 
 function App() {
   const [clips, setClips] = useState([])
   const [composerOpen, setComposerOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
   const [coords, setCoords] = useState({ lat: null, lng: null })
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState('nearby') // 'nearby' | 'worldwide'
+  const [mode, setMode] = useState(() => localStorage.getItem('incommon:mode') || 'nearby')
+  const [mapBounds, setMapBounds] = useState(null)
 
   const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
+  useEffect(() => {
+    localStorage.setItem('incommon:mode', mode)
+  }, [mode])
+
   const fetchClips = useCallback(async (opts = {}) => {
-    const { lat, lng, forceWorldwide = false } = opts
+    const { lat, lng, forceWorldwide = false, bounds = null } = opts
     try {
       setLoading(true)
       const params = new URLSearchParams()
-      if (!forceWorldwide && mode === 'nearby' && lat && lng) {
+      if (bounds) {
+        params.set('north', bounds.north)
+        params.set('south', bounds.south)
+        params.set('east', bounds.east)
+        params.set('west', bounds.west)
+        params.set('limit', '100')
+      } else if (!forceWorldwide && mode === 'nearby' && lat && lng) {
         params.set('lat', lat)
         params.set('lng', lng)
         params.set('radiusKm', '25')
@@ -27,9 +40,8 @@ function App() {
       const res = await fetch(`${baseUrl}/api/clips?${params.toString()}`)
       const data = await res.json()
 
-      // If we tried nearby and got nothing, fall back to worldwide automatically
       if (
-        Array.isArray(data) && data.length === 0 && mode === 'nearby' && lat && lng && !forceWorldwide
+        Array.isArray(data) && data.length === 0 && mode === 'nearby' && lat && lng && !forceWorldwide && !bounds
       ) {
         const res2 = await fetch(`${baseUrl}/api/clips?limit=50`)
         const data2 = await res2.json()
@@ -44,7 +56,6 @@ function App() {
     }
   }, [mode, baseUrl])
 
-  // On mount: get geolocation for nearby if available
   useEffect(() => {
     if (mode === 'nearby') {
       if ('geolocation' in navigator) {
@@ -61,7 +72,6 @@ function App() {
         fetchClips({ forceWorldwide: true })
       }
     } else {
-      // worldwide
       fetchClips({ forceWorldwide: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,9 +90,17 @@ function App() {
     } catch {}
   }
 
+  const openMap = () => setMapOpen(true)
+  const closeMap = () => { setMapOpen(false); setMapBounds(null) }
+
+  const onSelectBounds = async (b) => {
+    setMapBounds(b)
+    await fetchClips({ bounds: b })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <Header onOpenComposer={() => setComposerOpen(true)} mode={mode} onChangeMode={setMode} />
+      <Header onOpenComposer={() => setComposerOpen(true)} mode={mode} onChangeMode={setMode} onOpenMap={openMap} />
 
       <main className="max-w-5xl mx-auto px-4 py-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
@@ -113,6 +131,9 @@ function App() {
       </main>
 
       <Composer open={composerOpen} onClose={() => setComposerOpen(false)} onCreated={handleCreated} />
+      {mapOpen && (
+        <MapView onClose={closeMap} onSelectBounds={onSelectBounds} clips={clips} />
+      )}
     </div>
   )
 }

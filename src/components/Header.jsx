@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Header({ onOpenComposer, mode = 'worldwide', onChangeMode }) {
+export default function Header({ onOpenComposer, mode = 'worldwide', onChangeMode, onOpenMap }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -11,6 +11,12 @@ export default function Header({ onOpenComposer, mode = 'worldwide', onChangeMod
           <span className="text-white font-semibold text-lg tracking-tight">Incommon</span>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenMap}
+            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium border border-white/10 transition"
+          >
+            Explore map
+          </button>
           <div className="flex items-center rounded-lg bg-white/5 p-0.5 border border-white/10">
             <button
               onClick={() => onChangeMode && onChangeMode('nearby')}
